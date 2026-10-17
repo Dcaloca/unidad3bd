@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f6f7fb">
+    <meta name="description" content="Directorio de contactos conectado con Azure SQL Database.">
+    <title>Contactos | Directorio</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #202536;
+        background: #f6f7fb;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+        --muted: #747b8c;
+        --line: #e8eaf0;
+        --accent: #5c5be8;
+        --accent-dark: #4847cf;
+      }
+
+      * { box-sizing: border-box; }
+      body { margin: 0; min-width: 320px; }
+      button, input { font: inherit; }
+      button { cursor: pointer; }
+      .shell { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
+      header { padding: 28px 0; }
+      .topbar, .brand, .header-actions, .section-heading, .search-wrap, .contact-main, .contact-actions, .status {
+        display: flex;
+        align-items: center;
+      }
+      .topbar, .section-heading { justify-content: space-between; gap: 20px; }
+      .brand { gap: 12px; font-weight: 750; letter-spacing: -.03em; }
+      .brand-mark {
+        display: grid; width: 40px; height: 40px; place-items: center; border-radius: 13px;
+        color: white; background: var(--accent); font-size: 20px;
+      }
+      .header-actions { gap: 18px; }
+      .status { gap: 8px; color: var(--muted); font-size: 13px; }
+      .status-dot { width: 9px; height: 9px; border-radius: 50%; background: #a0a5b2; }
+      .status[data-state="connected"] .status-dot { background: #23a36d; }
+      .status[data-state="error"] .status-dot { background: #d94747; }
+      main { padding: 34px 0 72px; }
+      .intro { margin-bottom: 30px; }
+      .eyebrow { margin: 0 0 10px; color: var(--accent); font-size: 12px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+      h1 { margin: 0; font-size: clamp(30px, 5vw, 42px); letter-spacing: -.045em; }
+      .subtitle { margin: 10px 0 0; color: var(--muted); line-height: 1.6; }
+      .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 20px; }
+      .search-wrap { width: min(360px, 100%); position: relative; }
+      .search-wrap span { position: absolute; left: 14px; color: #8e94a2; }
+      .search-wrap input { width: 100%; padding: 11px 14px 11px 40px; border: 1px solid var(--line); border-radius: 10px; background: #fff; outline: none; }
+      .search-wrap input:focus, input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px #5c5be81b; }
+      .button {
+        display: inline-flex; justify-content: center; align-items: center; gap: 8px;
+        min-height: 42px; padding: 0 16px; border: 1px solid transparent; border-radius: 10px;
+        font-size: 14px; font-weight: 650; transition: background .15s, border-color .15s;
+      }
+      .button-primary { color: #fff; background: var(--accent); }
+      .button-primary:hover { background: var(--accent-dark); }
+      .button-secondary { color: #444a59; background: #fff; border-color: var(--line); }
+      .button-secondary:hover { background: #f9f9fc; }
+      .button-danger { color: #b83232; background: #fff; border-color: #f0dada; }
+      .button-small { min-height: 34px; padding: 0 11px; font-size: 12px; }
+      .card { overflow: hidden; border: 1px solid var(--line); border-radius: 16px; background: #fff; box-shadow: 0 8px 30px #20253608; }
+      .section-heading { padding: 20px 24px; border-bottom: 1px solid var(--line); }
+      .section-heading h2 { margin: 0; font-size: 17px; letter-spacing: -.02em; }
+      .count { color: var(--muted); font-size: 13px; }
+      .contact-list { padding: 0 24px; }
+      .contact-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--line); }
+      .contact-row:last-child { border-bottom: 0; }
+      .contact-main { min-width: 0; gap: 14px; }
+      .avatar { display: grid; flex: 0 0 44px; width: 44px; height: 44px; place-items: center; border-radius: 50%; color: #4c4bd2; background: #efefff; font-weight: 750; }
+      .contact-info { min-width: 0; }
+      .contact-name { display: block; overflow: hidden; margin-bottom: 4px; font-weight: 680; text-overflow: ellipsis; white-space: nowrap; }
+      .contact-detail { color: var(--muted); font-size: 13px; }
+      .contact-actions { flex: 0 0 auto; gap: 8px; }
+      .empty { padding: 60px 20px; text-align: center; }
+      .empty-icon { display: grid; width: 52px; height: 52px; margin: 0 auto 14px; place-items: center; border-radius: 16px; color: var(--accent); background: #f0f0ff; font-size: 24px; }
+      .empty h3 { margin: 0 0 7px; font-size: 16px; }
+      .empty p { margin: 0; color: var(--muted); font-size: 14px; }
+      .notice { display: none; margin-bottom: 18px; padding: 12px 15px; border: 1px solid #f2d6d6; border-radius: 10px; color: #9e3030; background: #fff5f5; font-size: 14px; }
+      .notice[data-visible="true"] { display: block; }
+      .loading { padding: 40px; color: var(--muted); text-align: center; }
+      dialog { width: min(460px, calc(100% - 32px)); padding: 0; border: 0; border-radius: 16px; box-shadow: 0 24px 80px #11182740; }
+      dialog::backdrop { background: #15182b73; backdrop-filter: blur(3px); }
+      .dialog-content { padding: 25px; }
+      .dialog-heading { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+      .dialog-heading h2 { margin: 0; font-size: 21px; }
+      .dialog-heading p { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+      .icon-button { width: 32px; height: 32px; border: 0; border-radius: 8px; color: var(--muted); background: transparent; font-size: 20px; }
+      .icon-button:hover { background: #f1f2f7; }
+      .field { margin-bottom: 15px; }
+      .field label { display: block; margin-bottom: 7px; font-size: 13px; font-weight: 650; }
+      .field input { width: 100%; padding: 11px 12px; border: 1px solid #dfe2e9; border-radius: 9px; outline: none; }
+      .dialog-error { min-height: 20px; margin: 0 0 10px; color: #b83232; font-size: 13px; }
+      .dialog-actions { display: flex; justify-content: flex-end; gap: 9px; padding-top: 4px; }
+      .toast { position: fixed; right: 22px; bottom: 22px; max-width: calc(100% - 44px); padding: 12px 16px; border-radius: 10px; color: #fff; background: #25293a; box-shadow: 0 8px 24px #12152130; font-size: 14px; }
+      .toast[hidden] { display: none; }
+      @media (max-width: 620px) {
+        .shell { width: min(100% - 28px, 1120px); }
+        header { padding: 18px 0; }
+        .header-actions { gap: 10px; }
+        .status { max-width: 125px; font-size: 11px; }
+        main { padding-top: 27px; }
+        .toolbar { align-items: stretch; flex-direction: column; }
+        .search-wrap { width: 100%; }
+        .toolbar .button { align-self: flex-start; }
+        .section-heading, .contact-list { padding-right: 16px; padding-left: 16px; }
+        .contact-row { align-items: flex-start; flex-direction: column; }
+        .contact-actions { padding-left: 58px; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="shell topbar">
+        <div class="brand"><span class="brand-mark" aria-hidden="true">C</span><span>Directorio</span></div>
+        <div class="header-actions">
+          <div class="status" id="connection-status" data-state="checking" role="status">
+            <span class="status-dot" aria-hidden="true"></span><span id="status-label">Comprobando conexión</span>
+          </div>
+          <button class="button button-secondary button-small" id="refresh-button" type="button">Actualizar</button>
+        </div>
+      </div>
+    </header>
+    <main class="shell">
+      <section class="intro">
+        <p class="eyebrow">Tu espacio de trabajo</p>
+        <h1>Contactos</h1>
+        <p class="subtitle">Administra tu directorio en un solo lugar.</p>
+      </section>
+
+      <div class="notice" id="notice" role="alert"></div>
+      <div class="toolbar">
+        <label class="search-wrap">
+          <span aria-hidden="true">⌕</span>
+          <input id="search-input" type="search" placeholder="Buscar por nombre, correo o teléfono" aria-label="Buscar contactos">
+        </label>
+        <button class="button button-primary" id="add-button" type="button"><span aria-hidden="true">＋</span> Nuevo contacto</button>
+      </div>
+
+      <section class="card" aria-labelledby="list-title">
+        <div class="section-heading">
+          <h2 id="list-title">Todos los contactos</h2>
+          <span class="count" id="contact-count">— contactos</span>
+        </div>
+        <div id="contact-list" class="contact-list" aria-live="polite">
+          <div class="loading">Cargando contactos…</div>
+        </div>
+      </section>
+    </main>
+
+    <dialog id="contact-dialog" aria-labelledby="dialog-title">
+      <form id="contact-form" class="dialog-content">
+        <div class="dialog-heading">
+          <div>
+            <h2 id="dialog-title">Nuevo contacto</h2>
+            <p>Completa los datos para guardarlo en el directorio.</p>
+          </div>
+          <button class="icon-button" id="close-dialog" type="button" aria-label="Cerrar">×</button>
+        </div>
+        <div class="field">
+          <label for="nombre">Nombre completo</label>
+          <input id="nombre" name="nombre" maxlength="100" autocomplete="name" required>
+        </div>
+        <div class="field">
+          <label for="email">Correo electrónico</label>
+          <input id="email" name="email" type="email" maxlength="100" autocomplete="email" required>
+        </div>
+        <div class="field">
+          <label for="telefono">Teléfono</label>
+          <input id="telefono" name="telefono" type="tel" maxlength="20" autocomplete="tel" required>
+        </div>
+        <p class="dialog-error" id="dialog-error" role="alert"></p>
+        <div class="dialog-actions">
+          <button class="button button-secondary" id="cancel-dialog" type="button">Cancelar</button>
+          <button class="button button-primary" id="save-button" type="submit">Guardar contacto</button>
+        </div>
+      </form>
+    </dialog>
+    <div class="toast" id="toast" role="status" hidden></div>
+
+    <script>
+      const list = document.getElementById('contact-list');
+      const count = document.getElementById('contact-count');
+      const notice = document.getElementById('notice');
+      const dialog = document.getElementById('contact-dialog');
+      const form = document.getElementById('contact-form');
+      const searchInput = document.getElementById('search-input');
+      const status = document.getElementById('connection-status');
+      const statusLabel = document.getElementById('status-label');
+      const toast = document.getElementById('toast');
+      let contacts = [];
+      let editingId = null;
+      let toastTimer;
+
+      async function request(url, options) {
+        const response = await fetch(url, {
+          ...options,
+          headers: { 'Content-Type': 'application/json', ...(options && options.headers) }
+        });
+        if (!response.ok) {
+          const result = await response.json().catch(() => ({}));
+          throw new Error(result.error || `Error ${response.status}: no se pudo completar la solicitud.`);
+        }
+        return response.status === 204 ? null : response.json();
+      }
+
+      function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, (character) => ({
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        })[character]);
+      }
+
+      function initials(name) {
+        return name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toLocaleUpperCase('es');
+      }
+
+      function renderContacts() {
+        const query = searchInput.value.trim().toLocaleLowerCase('es');
+        const filtered = contacts.filter((contact) =>
+          [contact.Nombre, contact.Email, contact.Telefono]
+            .some((value) => value.toLocaleLowerCase('es').includes(query))
+        );
+        count.textContent = `${filtered.length} ${filtered.length === 1 ? 'contacto' : 'contactos'}`;
+
+        if (filtered.length === 0) {
+          const hasSearch = query.length > 0;
+          list.innerHTML = `<div class="empty">
+            <div class="empty-icon" aria-hidden="true">${hasSearch ? '⌕' : '＋'}</div>
+            <h3>${hasSearch ? 'No hay resultados' : 'Aún no tienes contactos'}</h3>
+            <p>${hasSearch ? 'Prueba con otro nombre, correo o teléfono.' : 'Agrega tu primer contacto para empezar.'}</p>
+          </div>`;
+          return;
+        }
+
+        list.innerHTML = filtered.map((contact) => `
+          <article class="contact-row">
+            <div class="contact-main">
+              <span class="avatar" aria-hidden="true">${escapeHtml(initials(contact.Nombre))}</span>
+              <div class="contact-info">
+                <span class="contact-name">${escapeHtml(contact.Nombre)}</span>
+                <span class="contact-detail">${escapeHtml(contact.Email)} · ${escapeHtml(contact.Telefono)}</span>
+              </div>
+            </div>
+            <div class="contact-actions">
+              <button class="button button-secondary button-small" type="button" data-action="edit" data-id="${contact.Id}">Editar</button>
+              <button class="button button-danger button-small" type="button" data-action="delete" data-id="${contact.Id}">Eliminar</button>
+            </div>
+          </article>`).join('');
+      }
+
+      async function loadContacts() {
+        notice.dataset.visible = 'false';
+        list.innerHTML = '<div class="loading">Cargando contactos…</div>';
+        try {
+          contacts = await request('/api/contactos');
+          renderContacts();
+          await checkHealth();
+        } catch (error) {
+          contacts = [];
+          count.textContent = '— contactos';
+          list.innerHTML = `<div class="empty"><div class="empty-icon" aria-hidden="true">!</div><h3>No se pudo cargar el directorio</h3><p>${escapeHtml(error.message)}</p></div>`;
+          setConnectionStatus(false);
+        }
+      }
+
+      function setConnectionStatus(connected) {
+        status.dataset.state = connected ? 'connected' : 'error';
+        statusLabel.textContent = connected ? 'Base de datos conectada' : 'Sin conexión a la base de datos';
+      }
+
+      async function checkHealth() {
+        try {
+          await request('/api/health');
+          setConnectionStatus(true);
+        } catch (error) {
+          setConnectionStatus(false);
+        }
+      }
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.hidden = false;
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { toast.hidden = true; }, 3000);
+      }
+
+      function openDialog(contact) {
+        editingId = contact ? contact.Id : null;
+        document.getElementById('dialog-title').textContent = contact ? 'Editar contacto' : 'Nuevo contacto';
+        document.getElementById('save-button').textContent = contact ? 'Guardar cambios' : 'Guardar contacto';
+        document.getElementById('dialog-error').textContent = '';
+        form.reset();
+        if (contact) {
+          form.elements.nombre.value = contact.Nombre;
+          form.elements.email.value = contact.Email;
+          form.elements.telefono.value = contact.Telefono;
+        }
+        dialog.showModal();
+        form.elements.nombre.focus();
+      }
+
+      function closeDialog() {
+        dialog.close();
+        editingId = null;
+      }
+
+      document.getElementById('add-button').addEventListener('click', () => openDialog(null));
+      document.getElementById('refresh-button').addEventListener('click', loadContacts);
+      document.getElementById('close-dialog').addEventListener('click', closeDialog);
+      document.getElementById('cancel-dialog').addEventListener('click', closeDialog);
+      searchInput.addEventListener('input', renderContacts);
+      dialog.addEventListener('click', (event) => {
+        if (event.target === dialog) closeDialog();
+      });
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const saveButton = document.getElementById('save-button');
+        const errorMessage = document.getElementById('dialog-error');
+        saveButton.disabled = true;
+        errorMessage.textContent = '';
+        const contact = {
+          nombre: form.elements.nombre.value.trim(),
+          email: form.elements.email.value.trim(),
+          telefono: form.elements.telefono.value.trim()
+        };
+
+        try {
+          await request(editingId ? `/api/contactos/${editingId}` : '/api/contactos', {
+            method: editingId ? 'PUT' : 'POST',
+            body: JSON.stringify(contact)
+          });
+          closeDialog();
+          await loadContacts();
+          showToast(editingId ? 'Contacto actualizado.' : 'Contacto agregado.');
+        } catch (error) {
+          errorMessage.textContent = error.message;
+        } finally {
+          saveButton.disabled = false;
+        }
+      });
+
+      list.addEventListener('click', async (event) => {
+        const button = event.target.closest('button[data-action]');
+        if (!button) return;
+        const contact = contacts.find((item) => item.Id === Number(button.dataset.id));
+        if (!contact) return;
+
+        if (button.dataset.action === 'edit') {
+          openDialog(contact);
+          return;
+        }
+
+        if (!window.confirm(`¿Eliminar a ${contact.Nombre} del directorio?`)) return;
+        button.disabled = true;
+        try {
+          await request(`/api/contactos/${contact.Id}`, { method: 'DELETE' });
+          await loadContacts();
+          showToast('Contacto eliminado.');
+        } catch (error) {
+          notice.textContent = error.message;
+          notice.dataset.visible = 'true';
+          button.disabled = false;
+        }
+      });
+
+      loadContacts();
+    </script>
+  </body>
+</html>

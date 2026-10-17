@@ -2,6 +2,18 @@
 
 Aplicación web Full-Stack diseñada como plantilla y laboratorio práctico para estudiantes de ingeniería, enfocada en la **integración de bases de datos relacionales en la nube (Azure SQL Database)** consumidas desde una arquitectura serverless en **Vercel**.
 
+Incluye una interfaz adaptable para buscar, crear, editar y eliminar contactos, una API REST con consultas parametrizadas y un indicador de conectividad con Azure SQL.
+
+### Ejecución local
+
+1. Instala Node.js y ejecuta `npm install` en la carpeta del proyecto.
+2. Copia `.env.example` a `.env` y completa los datos de tu servidor Azure SQL. No compartas ni subas el archivo `.env`.
+3. Configura el firewall del servidor SQL para permitir la conexión desde tu equipo.
+4. Ejecuta `npm start` y abre `http://localhost:3000`.
+5. Comprueba la conexión en `http://localhost:3000/api/health`.
+
+La aplicación requiere la tabla `Contactos` descrita abajo. Si no se configuran las variables o la base de datos no está disponible, la API devuelve un error explícito y la interfaz muestra el estado de conexión.
+
 ---
 
 ## ☁️ Azure SQL Database vs. SQL Server Tradicional (On-Premises / Local)
