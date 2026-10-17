@@ -320,6 +320,7 @@
         event.preventDefault();
         const saveButton = document.getElementById('save-button');
         const errorMessage = document.getElementById('dialog-error');
+        const wasEditing = editingId !== null;
         saveButton.disabled = true;
         errorMessage.textContent = '';
         const contact = {
@@ -335,7 +336,7 @@
           });
           closeDialog();
           await loadContacts();
-          showToast(editingId ? 'Contacto actualizado.' : 'Contacto agregado.');
+          showToast(wasEditing ? 'Contacto actualizado.' : 'Contacto agregado.');
         } catch (error) {
           errorMessage.textContent = error.message;
         } finally {
